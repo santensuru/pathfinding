@@ -1,12 +1,15 @@
 # pathfinding
 extended pathfinding.js
 
-# init
+## lib
+https://github.com/qiao/PathFinding.js.git
+
+## init
 ```
 H30/7/10
 ```
 
-# Task
+## Task
 ```
 read file --> map.png
 do path-finding
