@@ -25,7 +25,6 @@ main();
 
 function main()
 {
- 
 fs.createReadStream('map.png')
     .pipe(new PNG({
         filterType: 4
@@ -46,16 +45,16 @@ fs.createReadStream('map.png')
                 // // and reduce opacity
                 // this.data[idx+3] = this.data[idx+3] >> 1;
                 
-                // walkable
-                if (this.data[idx] === 255 && this.data[idx+1] === 255 && this.data[idx+2] === 255)
-                {
-                    grid.setWalkableAt(x, y, true);
-                }
-                
                 // barrier
-                else
+                if (this.data[idx] === 0 && this.data[idx+1] === 0 && this.data[idx+2] === 0)
                 {
                     grid.setWalkableAt(x, y, false);
+                }
+                
+                // walkable
+                else
+                {
+                    grid.setWalkableAt(x, y, true);
                 }
                     
                 // red
@@ -76,10 +75,18 @@ fs.createReadStream('map.png')
                     start = [x, y];
             }
         }
- 
-        // this.pack().pipe(fs.createWriteStream('out.png'));
         
-        doFinding(grid);
+        var gridBackup = grid.clone();
+        // 7 type --> 5
+        for (var i=0; i<5; i++)
+        {
+            var finder = generateFinder(i);
+            
+            doFinding(grid, finder);
+            
+            grid = gridBackup.clone();
+        }
+        // this.pack().pipe(fs.createWriteStream('out.png'));
     });
 }
     
@@ -95,19 +102,14 @@ function count(path)
     return length;
 }
 
-function doFinding(grid)
+function doFinding(grid, finder)
 {
-    var finder = new PF.AStarFinder({
-        allowDiagonal: true,
-        dontCrossCorners: false
-    });
-    
     //var shortest_paths = [];
     var minimum_paths = 99999999;
     
     //console.log(start);
     
-    grid.setWalkableAt(start[0], start[1], true);
+    //grid.setWalkableAt(start[0], start[1], true);
     
     var gridBackup = grid.clone();
     
@@ -119,7 +121,7 @@ function doFinding(grid)
         
         //console.log(dests[i]);
         
-        grid.setWalkableAt(dests[i][0], dests[i][1], true);
+        //grid.setWalkableAt(dests[i][0], dests[i][1], true);
         
         var path = finder.findPath(start[0], start[1], dests[i][0], dests[i][1], grid);
         //console.log(path);
@@ -134,6 +136,77 @@ function doFinding(grid)
     
     //console.log(shortest_paths);
     console.log("length: " + minimum_paths);
+}
+
+function generateFinder(idx)
+{
+    var finder;
+    
+    if (idx === 0)
+    {
+        finder = new PF.AStarFinder({
+            allowDiagonal: true,
+            dontCrossCorners: false
+        });
+        
+        console.log("AStar");
+    }
+    else if (idx === 1)
+    {
+        finder = new PF.BestFirstFinder({
+            allowDiagonal: true,
+            dontCrossCorners: false
+        });
+        
+        console.log("BestFirst");
+    }
+    else if (idx === 2)
+    {
+        finder = new PF.BreadthFirstFinder({
+            allowDiagonal: true,
+            dontCrossCorners: false
+        });
+        
+        console.log("BreadthFirst");
+    }
+    else if (idx === 3)
+    {
+        finder = new PF.DijkstraFinder({
+            allowDiagonal: true,
+            dontCrossCorners: false
+        });
+        
+        console.log("Dijkstra");
+    }
+    // else if (idx === 4)
+    // {
+    //     finder = new PF.IDAStarFinder({
+    //         allowDiagonal: true,
+    //         dontCrossCorners: false
+    //     });
+        
+    //     console.log("IDAStar");
+    // }
+    else //if (idx === 5)
+    {
+        finder = new PF.JumpPointFinder({
+            allowDiagonal: true,
+            dontCrossCorners: false
+        });
+        
+        console.log("JumpPoint");
+    }
+    // else
+    // {
+    //     finder = new PF.OrthogonalJumpPointFinder({
+    //         allowDiagonal: true,
+    //         dontCrossCorners: false
+    //     });
+        
+    //     console.log("OrthogonalJumpPoint");
+    // }
+    
+    return finder;
 }
 
 function example()
