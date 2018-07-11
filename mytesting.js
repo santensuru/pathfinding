@@ -4,31 +4,37 @@
 //https://github.com/qiao/PathFinding.js
 //https://stackoverflow.com/questions/13725138/javascript-multi-dimensional-dynamic-array
 
+// GLOBAL
+
 var PF = require('pathfinding');
 
 
 var fs = require('fs'),
     PNG = require('pngjs').PNG;
-    
-var matrix = [];
 
 var start = []; // y,x
 var dests = []; // array of dest
 var it = 0;
 
 var most = [];
+
+main();
+// example();
+
+// functions
+
+function main()
+{
  
 fs.createReadStream('map.png')
     .pipe(new PNG({
         filterType: 4
     }))
     .on('parsed', function() {
+        
+        var grid = new PF.Grid(this.width, this.height); 
  
         for (var y = 0; y < this.height; y++) {
-            
-            if(!matrix[y])
-                matrix[y] = []
-                
             for (var x = 0; x < this.width; x++) {
                 var idx = (this.width * y + x) << 2;
  
@@ -40,16 +46,20 @@ fs.createReadStream('map.png')
                 // // and reduce opacity
                 // this.data[idx+3] = this.data[idx+3] >> 1;
                 
-                // barrier
-                if (this.data[idx] === 255 && this.data[idx+1] === 255 && this.data[idx+2] === 255)
-                    matrix[y][x] = +"1";
-                
                 // walkable
-                else if (this.data[idx] === 0 && this.data[idx+1] === 0 && this.data[idx+2] === 0)
-                    matrix[y][x] = +"0";
+                if (this.data[idx] === 255 && this.data[idx+1] === 255 && this.data[idx+2] === 255)
+                {
+                    grid.setWalkableAt(x, y, true);
+                }
+                
+                // barrier
+                else
+                {
+                    grid.setWalkableAt(x, y, false);
+                }
                     
                 // red
-                else if (this.data[idx] === 255 && this.data[idx+1] === 0 && this.data[idx+2] === 0)
+                if (this.data[idx] === 255 && this.data[idx+1] === 0 && this.data[idx+2] === 0)
                 {
                     dests[it] = [x, y];
                     it++;
@@ -69,8 +79,9 @@ fs.createReadStream('map.png')
  
         // this.pack().pipe(fs.createWriteStream('out.png'));
         
-        doFinding(matrix);
+        doFinding(grid);
     });
+}
     
 function count(path)
 {
@@ -84,18 +95,15 @@ function count(path)
     return length;
 }
 
-function doFinding(matrix)
+function doFinding(grid)
 {
-    //console.log(matrix);
-        
-    //console.log(matrix[0].length + " " + matrix.length);
-    var grid = new PF.Grid(matrix);
     var finder = new PF.AStarFinder({
         allowDiagonal: true,
         dontCrossCorners: false
     });
     
-    var shortest_paths = [];
+    //var shortest_paths = [];
+    var minimum_paths = 99999999;
     
     //console.log(start);
     
@@ -106,7 +114,7 @@ function doFinding(matrix)
     var it=0;
     for (var i=0; i<dests.length; i++)
     {
-        if (!(dests[i][0] == most[0][0] || dests[i][0] == most[1][0] || dests[i][1] == most[0][1] || dests[i][1] != most[1][1]))
+        if (!(dests[i][0] == most[0][0] || dests[i][0] == most[1][0] || dests[i][1] == most[0][1] || dests[i][1] == most[1][1]))
             continue;
         
         //console.log(dests[i]);
@@ -115,24 +123,28 @@ function doFinding(matrix)
         
         var path = finder.findPath(start[0], start[1], dests[i][0], dests[i][1], grid);
         //console.log(path);
-        shortest_paths[it] = count(path);
-        it++;
+        //shortest_paths[it] = count(path);
+        //it++;
+        
+        var c = count(path);
+        minimum_paths = minimum_paths < c ? minimum_paths : c;
         
         grid = gridBackup.clone();
     }
     
-    console.log(shortest_paths);
+    //console.log(shortest_paths);
+    console.log("length: " + minimum_paths);
 }
 
-// example
-/*
-var matrix = [
-    [0, 0, 0, 1, 0],
-    [1, 0, 0, 0, 1],
-    [0, 0, 1, 0, 0],
-];
-var grid = new PF.Grid(matrix);
-var finder = new PF.AStarFinder();
-var path = finder.findPath(1, 2, 4, 2, grid);
-console.log(count(path));
-*/
+function example()
+{
+    var matrix = [
+        [0, 0, 0, 1, 0],
+        [1, 0, 0, 0, 1],
+        [0, 0, 1, 0, 0],
+    ];
+    var grid = new PF.Grid(matrix);
+    var finder = new PF.AStarFinder();
+    var path = finder.findPath(1, 2, 4, 2, grid);
+    console.log(count(path));
+}
